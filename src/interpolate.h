@@ -46,7 +46,6 @@ class Interpolator{
         std::vector<double> c(n - 1);
         double coe = 3.0 / h / h;
 
-        omp_set_num_threads(omp_get_max_threads());
         #pragma omp parallel
         {
             for(int i = 0;i <= n - 2;i++){

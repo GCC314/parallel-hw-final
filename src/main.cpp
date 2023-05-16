@@ -18,14 +18,22 @@
 #include "diago.h"
 
 int main(int argc, char **argv){
-    if(argc != 2){
-        std::cerr << "Usage: " << argv[0] << " [FILE]" << std::endl;
+    if(argc != 3){
+        std::cerr << "Usage: " << argv[0] << " [FILE] [THREAD_NUM]" << std::endl;
         return 1;
     }
+
+
     MPI_Init(&argc, &argv);
     int size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    if(rank == 0){
+        int thread_num = std::stoi(argv[2]);
+        std::cout << "thread set: " << thread_num << '\n'; 
+        omp_set_num_threads(thread_num);
+    }
     
     int N = 0;
     double *H = nullptr, *W = nullptr;
@@ -49,7 +57,6 @@ int main(int argc, char **argv){
 
         auto itp = Interpolator(&dist);
 
-
         H = (double*)malloc(sizeof(double) * N * N);
         
         double dx = std::stod(getarg(inp, "lx")) / (V.nx - 1);
@@ -65,10 +72,11 @@ int main(int argc, char **argv){
     }
 
     MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     if(rank) H = (double*)malloc(sizeof(double) * N * N);
     W = (double*)malloc(sizeof(double) * N);
     MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Bcast(&H, N * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(H, N * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 
     diagonize(rank, size, H, W, N, diag_mode);

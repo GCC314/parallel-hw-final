@@ -41,9 +41,15 @@ void output(double *H, double *W, int N){
 void diagonize(int rank, int size, double *H, double *W, int N, 
     int mode){
 
-    std::cout << "[diago] start\n";
-    mytimer::start("diago");
+    if(rank == 0) std::cout << "[diago] start\n";
+    if(rank == 0) mytimer::start("diago");
     
+    // {
+    //     for(int i = 0;i < N;i++) for(int j = 0;j < N;j++){
+    //         std::cout << std::setw(6) << H[i * N + j] << " \n"[j == N - 1];
+    //     }
+    // }
+
     if(rank == 0){
         if(mode == D_MODE_LAP){ // LAPACK
             int res = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
@@ -51,7 +57,7 @@ void diagonize(int rank, int size, double *H, double *W, int N,
             if(res) myabort("diago: diagonization failed.");
             output(H, W, N);
             std::cout << "[diago] end\n";
-            mytimer::end("diago");
+            if(rank == 0) mytimer::end("diago");
             return;
         }
         else if(mode != D_MODE_SCA) // UNKNOWN
@@ -64,7 +70,7 @@ void diagonize(int rank, int size, double *H, double *W, int N,
     char uplo = 'U';
     int IA = 1;         // Start position of submatrix
     int ierr = 0;
-    int B = 4;
+    int B = 2;
     int SRC = 0;
     int ICTXT = 0;
     int DESC[9];
@@ -102,7 +108,8 @@ void diagonize(int rank, int size, double *H, double *W, int N,
 
     // Calculate workspace size
     pdsyevd_(&jobz, &uplo, &N, H, &IA, &IA, DESC, W, V, &IA, &IA,
-             DESC_V, &workN, &lwork, &liwork, &liwork, &ierr);
+             DESC_V, &worksize, &lwork, &liwork, &liwork, &ierr);
+    // std::cerr << "ierr " << ierr << '\n';
     lwork = (int)worksize;
 
     double* work = new double[lwork];
@@ -110,6 +117,7 @@ void diagonize(int rank, int size, double *H, double *W, int N,
 
     pdsyevd_(&jobz, &uplo, &N, H, &IA, &IA, DESC, W, V, &IA, &IA,
             DESC_V, work, &lwork, iwork, &liwork, &ierr);
+    // std::cerr << "ierr " << ierr << '\n';
 
     delete[] work;
     delete[] iwork;
@@ -118,7 +126,8 @@ void diagonize(int rank, int size, double *H, double *W, int N,
 
     delete[] V;
     blacs_gridexit_(&ICTXT);
+    
     if(!rank) output(H, W, N);
-    std::cout << "[diago] end\n";
-    mytimer::end("diago");
+    if(rank == 0) std::cout << "[diago] end\n";
+    if(rank == 0) mytimer::end("diago");
 }

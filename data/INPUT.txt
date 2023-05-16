@@ -6,9 +6,9 @@ thetaxy 0
 thetayz 0
 thetaxz 0
 support_SH 0
-diago_lib lapack
+diago_lib scalapack
 support_Periodic_Boundary 0
 multi_parallel_strategies 0
-points_path ./POINTS.txt
+points_path ./POINTS2.txt
 v_path ./V.txt
 distribution_path ./Distribution.txt

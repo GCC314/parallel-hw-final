@@ -19,8 +19,6 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
     mytimer::start("calc");
     std::cout << "[calculator] start\n";
 
-    omp_set_num_threads(omp_get_max_threads());
-
     memset(H, 0, sizeof(double) * N * N);
     
     int n_total = V.nx * V.ny * V.nz;
