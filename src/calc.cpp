@@ -6,14 +6,18 @@
 #include <cstring>
 #include <algorithm>
 #include "omp.h"
+#include "mytimer.h"
 using std::max;
 using std::min;
 
-const int MAX_TOTAL_BUFSIZE = 50000000;
+const int MAX_TOTAL_BUFSIZE = 5000000;
 inline double S2(const double& x){return x * x;}
 
 void calculator(double* H, int N, Interpolator& itp, v_data &V,
     std::vector<point_data> &points, double dx, double dy, double dz){
+
+    mytimer::start("calc");
+    std::cout << "[calculator] start\n";
 
     omp_set_num_threads(omp_get_max_threads());
 
@@ -31,6 +35,8 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
     for(int l = 0, r_ = fb_size;l < n_total;l += fb_size, r_ += fb_size){
         int r = min(n_total, r_);
         
+        std::cout << "[calculator] calculating f in [" << l << "," << r << ")\n";
+        
         // calc f_{ai}
         #pragma omp parallel for collapse(2)
         for(int i = 0;i < N;i++){
@@ -43,6 +49,8 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
         }
 
         #pragma omp barrier
+
+        std::cout << "[calculator] reducing in [" << l << "," << r << ")\n";
 
         for(int i = 0;i < N;i++){
             for(int j = i;j < N;j++){
@@ -59,4 +67,6 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
 
     }
     
+    std::cout << "[calculator] end\n";
+    mytimer::end("calc");
 }

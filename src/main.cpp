@@ -11,6 +11,7 @@
 #include "input.h"
 #include "interpolate.h"
 #include "calc.h"
+#include "mytimer.h"
 
 #include "mpi.h"
 #include "omp.h"
@@ -31,6 +32,7 @@ int main(int argc, char **argv){
     int diag_mode = 0;
 
     if(rank == 0){
+        mytimer::start("input phase");
         input_args inp = parseInput(argv[1]);
         checkInput(inp);
         
@@ -38,9 +40,16 @@ int main(int argc, char **argv){
         auto V = parseV(getarg(inp, "v_path"));
         auto dist = parseDist(getarg(inp, "distribution_path"));
 
-        auto itp = Interpolator(&dist);
+        std::cout << "Data files loaded\n";
+        mytimer::end("input phase");
 
         N = points.size();
+        std::cout << "points size: " << N << "\n";
+        myassert(points.size() >= 2);
+
+        auto itp = Interpolator(&dist);
+
+
         H = (double*)malloc(sizeof(double) * N * N);
         
         double dx = std::stod(getarg(inp, "lx")) / (V.nx - 1);

@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <cmath>
 #include <fstream>
+#include "mytimer.h"
 
 extern "C"{
 /** ScaLAPACK and BLACS routines */
@@ -39,12 +40,18 @@ void output(double *H, double *W, int N){
 
 void diagonize(int rank, int size, double *H, double *W, int N, 
     int mode){
+
+    std::cout << "[diago] start\n";
+    mytimer::start("diago");
+    
     if(rank == 0){
         if(mode == D_MODE_LAP){ // LAPACK
             int res = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
                 N, H, N, W);
             if(res) myabort("diago: diagonization failed.");
             output(H, W, N);
+            std::cout << "[diago] end\n";
+            mytimer::end("diago");
             return;
         }
         else if(mode != D_MODE_SCA) // UNKNOWN
@@ -112,4 +119,6 @@ void diagonize(int rank, int size, double *H, double *W, int N,
     delete[] V;
     blacs_gridexit_(&ICTXT);
     if(!rank) output(H, W, N);
+    std::cout << "[diago] end\n";
+    mytimer::end("diago");
 }

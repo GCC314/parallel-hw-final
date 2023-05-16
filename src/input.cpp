@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <vector>
+#include <cctype>
 
 #include "myerror.h"
 #include "input.h"
@@ -17,9 +18,21 @@ string ToLower(const string &src){
     return ret;
 }
 
-string getarg(const input_args &M, const string &key){
+string getarg(const input_args &M, string key){
+    key = ToLower(key);
     if(M.find(key) == M.end()) myabort("Missing key: " + key);
     return M.at(key);
+}
+
+bool getd(std::ifstream &ifs, double &d){
+    char c;
+    for(ifs >> c; \
+        !ifs.eof() && !isdigit(c) && c != '.' && c != '-'; \
+        ifs >> c);
+    if(ifs.eof()) return false;
+    ifs.putback(c);
+    ifs >> d;
+    return true;
 }
 
 input_args parseInput(const string &fname){
@@ -69,7 +82,7 @@ v_data parseV(const string &fname){
         for(int i = 0;i < ret.nx;i++){
             for(int j = 0;j < ret.ny;j++){
                 for(int k = 0;k < ret.nz;k++){
-                    ifs >> ret.d[i * ret.ny * ret.nz + j * ret.nz + k];
+                    getd(ifs, ret.d[i * ret.ny * ret.nz + j * ret.nz + k]);
                 }
             }
         }
@@ -85,7 +98,10 @@ dist_data parseDist(const string &fname){
         ret.mesh = std::stod(getarg(args, "mesh"));
         myassert(getarg(args, "l") == "1");
         ret.f = (double*)malloc(sizeof(double) * ret.mesh);
-        for(int i = 0;i < ret.mesh;i++) ifs >> ret.f[i];
+        
+        for(int i = 0;i < ret.mesh;i++){
+            getd(ifs, ret.f[i]);
+        }
     });
     return ret;
 }
@@ -95,9 +111,14 @@ std::vector<point_data> parsePoints(const string &fname){
     if(!ifs.is_open()) myabort("Failed to open file: " + fname);
 
     std::vector<point_data> ret(0);
-    while(!ifs.eof()){
-        double x, y, z;
-        ifs >> x >> y >> z;
+    
+    double x, y, z;
+    while(1){
+        bool ok = true;
+        ok &= getd(ifs, x);
+        ok &= getd(ifs, y);
+        ok &= getd(ifs, z);
+        if(!ok) break;
         ret.push_back((point_data){x, y, z});
     }
     return ret;

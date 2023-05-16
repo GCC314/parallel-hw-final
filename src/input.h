@@ -38,7 +38,7 @@ struct point_data{
 string ToLower(const string &src);
 
 
-string getarg(const input_args &M, const string &key);
+string getarg(const input_args &M, string key);
 
 
 input_args parseInput(const string &fname);

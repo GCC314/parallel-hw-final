@@ -6,12 +6,16 @@
 #include "input.h"
 #include <omp.h>
 #include <cmath>
+#include "mytimer.h"
 
 class Interpolator{
     public:
     dist_data *dist;
     double* M;
     Interpolator(dist_data *dist):dist(dist){
+        mytimer::start("itp calc");
+        std::cout << "[itp] calculating coefficents\n";
+
         double h = dist->dr;
         double *f = dist->f;
         int n = dist->mesh - 1;
@@ -57,6 +61,9 @@ class Interpolator{
         M[n - 1] = c[n - 2] / u[n - 3];
         for(int i = n - 2;i >= 2;i--) M[i] = (c[i - 1] - 0.5 * M[i + 1]) / u[i - 2];
         M[1] = 0.5 * c[0] - 0.25 * M[2];
+
+        std::cout << "[itp] coeffients calculated\n";
+        mytimer::end("itp calc");
     }
 
     void unload(){
