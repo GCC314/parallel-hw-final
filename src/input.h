@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __INPUT_H__
+#define __INPUT_H__
 
 #include <cstring>
 #include <iostream>
@@ -53,3 +54,5 @@ std::vector<point_data> parsePoints(const string &fname);
 
 
 void checkInput(const input_args &args);
+
+#endif

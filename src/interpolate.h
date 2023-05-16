@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __INTERPOLATE_H__
+#define __INTERPOLATE_H__
 
 #include <vector>
 #include <cstdlib>
@@ -75,3 +76,5 @@ class Interpolator{
         return ans / 6 / h;
     }
 };
+
+#endif

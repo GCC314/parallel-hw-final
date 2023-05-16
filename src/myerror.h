@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __MYERROR_H__
+#define __MYERROR_H__
 
 #include "mpi.h"
 #include <cstring>
@@ -17,3 +18,5 @@ void myabort(const string &info){
 void myassert(bool expr){
     if(!expr) myabort("my assertion failed!");
 }
+
+#endif
