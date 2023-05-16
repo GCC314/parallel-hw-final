@@ -1,0 +1,62 @@
+#include "calc.h"
+#include "interpolate.h"
+#include "input.h"
+#include <vector>
+#include "myerror.h"
+#include <cstring>
+#include <algorithm>
+#include "omp.h"
+using std::max;
+using std::min;
+
+const int MAX_TOTAL_BUFSIZE = 50000000;
+inline double S2(const double& x){return x * x;}
+
+void calculator(double* H, int N, Interpolator& itp, v_data &V,
+    std::vector<point_data> &points, double dx, double dy, double dz){
+
+    omp_set_num_threads(omp_get_max_threads());
+
+    memset(H, 0, sizeof(double) * N * N);
+    
+    int n_total = V.nx * V.ny * V.nz;
+    int fb_size = min(n_total, MAX_TOTAL_BUFSIZE / N);
+    double** fbuf = (double**)malloc(sizeof(double*) * N);
+    for(int i = 0;i < N;i++){
+        fbuf[i] = (double*)malloc(sizeof(double) * fb_size);
+    }
+    
+    int mod_yz = V.ny * V.nz; // to get id;
+
+    for(int l = 0, r_ = fb_size;l < n_total;l += fb_size, r_ += fb_size){
+        int r = min(n_total, r_);
+        
+        // calc f_{ai}
+        #pragma omp parallel for collapse(2)
+        for(int i = 0;i < N;i++){
+            for(int p = l;p < r;p++){
+                point_data& pt = points[i];
+                int ix = p / mod_yz, iy = (p / V.nz) % V.ny, iz = p % V.nz;
+                double d_2 = S2(pt.x-ix*dx)+S2(pt.y-iy*dy)+S2(pt.z-iz*dz);
+                fbuf[i][p - l] = itp.F(sqrt(d_2));
+            }
+        }
+
+        #pragma omp barrier
+
+        for(int i = 0;i < N;i++){
+            for(int j = i;j < N;j++){
+                double s = 0.0;
+
+                #pragma omp parallel for reduction(+:s)
+                for(int p = l;p < r;p++){
+                    s += fbuf[i][p - l] * V.d[p] * fbuf[j][p - l];
+                }
+                
+                H[i * N + j] += s;
+            }
+        }
+
+    }
+    
+}

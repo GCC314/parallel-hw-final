@@ -18,7 +18,7 @@ typedef std::unordered_map<string, string> input_args;
 struct v_data{
     int nx, ny, nz;
     double *d;
-    ~v_data(){free(d);}
+    void unload(){free(d);}
 };
 
 struct dist_data{
@@ -26,7 +26,7 @@ struct dist_data{
     double dr;
     int mesh;
     double *f;
-    ~dist_data(){free(f);}
+    void unload(){free(f);}
 };
 
 struct point_data{
@@ -42,7 +42,7 @@ string ToLower(const string &src){
 
 string getarg(const input_args &M, const string &key){
     if(M.find(key) == M.end()) myabort("Missing key: " + key);
-    return M[key];
+    return M.at(key);
 }
 
 

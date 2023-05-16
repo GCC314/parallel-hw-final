@@ -28,7 +28,7 @@ input_args parseInput(const string &fname){
 }
 
 template<typename F>
-void parseWithFunc(const string &fname, const string &pname, F &func){
+void parseWithFunc(const string &fname, const string &pname, F func){
     std::ifstream ifs(fname);
     if(!ifs.is_open()) myabort("Failed to open file: " + fname);
     input_args args;
@@ -40,13 +40,12 @@ void parseWithFunc(const string &fname, const string &pname, F &func){
         string argname, argval;
         ss >> argname;
 
-        if(argname == pname) func(ifs); // call callback function
+        if(argname == pname) func(args, ifs); // call callback function
         else{
             ss >> argval;
             args[ToLower(argname)] = argval;
         }
     }
-    return ret;
 }
 
 v_data parseV(const string &fname){
@@ -71,7 +70,7 @@ dist_data parseDist(const string &fname){
     dist_data ret;
     parseWithFunc(fname, "f:", [&](const input_args& args, std::ifstream &ifs){
         ret.cutoff = std::stod(getarg(args, "cutoff"));
-        ret.dx = std::stod(getarg(args, "dx"));
+        ret.dr = std::stod(getarg(args, "dr"));
         ret.mesh = std::stod(getarg(args, "mesh"));
         myassert(getarg(args, "l") == "1");
         ret.f = (double*)malloc(sizeof(double) * ret.mesh);
@@ -85,7 +84,7 @@ std::vector<point_data> parsePoints(const string &fname){
     if(!ifs.is_open()) myabort("Failed to open file: " + fname);
 
     std::vector<point_data> ret(0);
-    for(int i = 0;i < n;i++){
+    while(!ifs.eof()){
         double x, y, z;
         ifs >> x >> y >> z;
         ret.push_back((point_data){x, y, z});
@@ -94,11 +93,11 @@ std::vector<point_data> parsePoints(const string &fname){
 }
 
 void checkInput(const input_args &args){
-    myassert(getarg(arg, "isHexahedral") == "0");
-    myassert(getarg(arg, "thetaxy") == "0");
-    myassert(getarg(arg, "thetayz") == "0");
-    myassert(getarg(arg, "thetaxz") == "0");
-    myassert(getarg(arg, "support_SH") == "0");
-    myassert(getarg(arg, "support_Periodic_Boundary") == "0");
-    myassert(getarg(arg, "multi_parallel_strategies") == "0");
+    myassert(getarg(args, "isHexahedral") == "0");
+    myassert(getarg(args, "thetaxy") == "0");
+    myassert(getarg(args, "thetayz") == "0");
+    myassert(getarg(args, "thetaxz") == "0");
+    myassert(getarg(args, "support_SH") == "0");
+    myassert(getarg(args, "support_Periodic_Boundary") == "0");
+    myassert(getarg(args, "multi_parallel_strategies") == "0");
 }
