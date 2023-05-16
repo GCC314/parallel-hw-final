@@ -11,6 +11,17 @@
 
 using std::string;
 
+string ToLower(const string &src){
+    string ret = "";
+    for(auto c : src) ret += tolower(c);
+    return ret;
+}
+
+string getarg(const input_args &M, const string &key){
+    if(M.find(key) == M.end()) myabort("Missing key: " + key);
+    return M.at(key);
+}
+
 input_args parseInput(const string &fname){
     std::ifstream ifs(fname);
     if(!ifs.is_open()) myabort("Failed to open file: " + fname);

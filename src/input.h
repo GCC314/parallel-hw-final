@@ -35,16 +35,10 @@ struct point_data{
 };
 
 
-string ToLower(const string &src){
-    string ret = "";
-    for(auto c : src) ret += tolower(c);
-    return ret;
-}
+string ToLower(const string &src);
 
-string getarg(const input_args &M, const string &key){
-    if(M.find(key) == M.end()) myabort("Missing key: " + key);
-    return M.at(key);
-}
+
+string getarg(const input_args &M, const string &key);
 
 
 input_args parseInput(const string &fname);

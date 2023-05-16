@@ -5,8 +5,11 @@ LAPACK_HEADER_DIR = $(LAPACK_ROOT_DIR)/LAPACKE/include
 SCALAPACK_ROOT_DIR = thirdparty/scalapack-2.2.0
 SCALAPACK_LIB = $(SCALAPACK_ROOT_DIR)/libscalapack.a
 
+LIBS = -L$(LAPACK_LIB_DIR) -L$(SCALAPACK_ROOT_DIR) -lscalapack -llapacke -llapack -lblas
+# LIBS = -L$(LAPACK_LIB_DIR) -L$(SCALAPACK_ROOT_DIR) -lscalapack -llapacke -llapack -lblacs -lpblas -lblas
+
 CFLAGS = -std=c++11 -O3 -fopenmp
-LFLAGS = -llapacke -llapack -lm -lgfortran
+LFLAGS = -lm -lgfortran
 MPICXX = mpicxx
 
 EXEC_NAME = main
@@ -15,15 +18,13 @@ EXEC_DIR = build/
 .PHONY: main clean lapack scalapack
 
 main:
-	$(MPICXX) -D __MPI -o $(EXEC_DIR)/$(EXEC_NAME) $(CFLAGS) $(LFLAGS) -I$(LAPACK_HEADER_DIR) -L$(LAPACK_LIB_DIR) src/*.cpp $(SCALAPACK_LIB)
+	$(MPICXX) -D __MPI -o $(EXEC_DIR)/$(EXEC_NAME) $(CFLAGS) -I$(LAPACK_HEADER_DIR) src/*.cpp $(LIBS) $(LFLAGS)
 
 lapack:
-	$(MAKE) -C $(LAPACK_ROOT_DIR) lapacklib
-	$(MAKE) -C $(LAPACK_ROOT_DIR) lapackelib
+	$(MAKE) -C $(LAPACK_ROOT_DIR) lib
 
 scalapack:
-	$(MAKE) -C $(SCALAPACK_ROOT_DIR) blacslib
-	$(MAKE) -C $(SCALAPACK_ROOT_DIR) scalapacklib
+	$(MAKE) -C $(SCALAPACK_ROOT_DIR) lib
 
 clean:
 	- $(MAKE) -C $(LAPACK_ROOT_DIR) clean
