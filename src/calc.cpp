@@ -5,12 +5,13 @@
 #include "myerror.h"
 #include <cstring>
 #include <algorithm>
+#include <iostream>
 #include "omp.h"
 #include "mytimer.h"
 using std::max;
 using std::min;
 
-const int MAX_TOTAL_BUFSIZE = 5000000;
+const int MAX_TOTAL_BUFSIZE = 50000000;
 inline double S2(const double& x){return x * x;}
 
 void calculator(double* H, int N, Interpolator& itp, v_data &V,
@@ -64,7 +65,10 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
         }
 
     }
-    
+
+    for(int i = 0;i < N;i++) for(int j = 0;j < i;j++)
+        H[i * N + j] = H[j * N + i];
+
     std::cout << "[calculator] end\n";
     mytimer::end("calc");
 }
