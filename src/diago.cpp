@@ -4,6 +4,7 @@
 #include <lapacke.h>
 #include <cstring>
 #include <iomanip>
+#include <cstdio>
 #include <cmath>
 #include <fstream>
 #include "mytimer.h"
@@ -32,6 +33,9 @@ void pdgemr2d_(int *m, int *n, double *A, int *ia, int *ja,
 
 }
 
+const int TAG_ZBUF = 314, TAG_ZINFO = 272;
+char MAJOR_TYPE[] = "Row-major";
+
 void output(double *H, double *W, int N){
     {
         std::ofstream ofs("eigenvalues.log");
@@ -49,11 +53,142 @@ void output(double *H, double *W, int N){
     }
 }
 
+inline int local_to_global(int idx, int bsize, int pcoord, int plen){
+    return ((idx / bsize) * plen + pcoord) * bsize + (idx % bsize);
+}
+
+// Too long and too annoying, treat in a function
+void diagonize_scalapack(int rank, int size, double *H, double *W, int N, 
+    int mode){
+    int B = 2; // block size, matrix split into 2*2
+    int zero = 0, one = 1;
+    char jobz = 'V', uplo = 'U';
+    int info;
+    double *A, *Z;
+    int descA[9], descZ[9];
+
+    // Initialize BLACS
+    int blacs_context = Csys2blacs_handle(MPI_COMM_WORLD);
+    
+    // split process grid, nprow * npcol == size;
+    int nprow = (int)sqrt(size);
+    int npcol = size / nprow;
+    while(nprow * npcol != size) {
+        nprow--;
+        npcol = size / nprow;
+    }
+
+    Cblacs_gridinit(&blacs_context, MAJOR_TYPE, nprow, npcol);
+    // Initialize the process grid
+
+    // get coordinate in process grid
+    int myrow, mycol;
+    Cblacs_pcoord(blacs_context, rank, &myrow, &mycol);
+
+    int local_nrow = numroc_(&N, &B, &myrow, &zero, &nprow);
+    int local_ncol = numroc_(&N, &B, &mycol, &zero, &npcol);
+    // fprintf(stderr, "rank=%d, lnr=%d, lnc=%d, mr=%d, mc=%d\n", \
+    //     rank, local_nrow, local_ncol, myrow, mycol);
+
+    // allocate the local matrix
+    A = (double*)malloc(sizeof(double) * local_nrow * local_ncol);
+    Z = (double*)malloc(sizeof(double) * N * N);
+
+    // initialize the local matrix
+    for (int i = 0; i < local_nrow; i++){
+        for (int j = 0; j < local_ncol; j++){
+            int global_i = local_to_global(i, B, myrow, nprow);
+            int global_j = local_to_global(j, B, mycol, npcol);
+            // fprintf(stderr, "(%d,%d)->(%d,%d)\n",i,j,global_i,global_j);
+            A[i + j * local_nrow] = H[global_i + global_j * N];
+        }
+    }
+
+    // for(int i = 0;i < local_nrow;i++) for(int j = 0;j < local_ncol;j++){
+    //     fprintf(stderr, "rank=%d,A[%d][%d]=%.1lf\n", \
+    //         rank, i, j, A[i + j * local_nrow]);
+    // }
+
+    // initialize descs
+    int lda = std::max(1, local_nrow);
+    descinit_(descA, &N, &N, &B, &B, &zero, &zero,
+                &blacs_context, &lda, &info);
+    descinit_(descZ, &N, &N, &B, &B, &zero, &zero,
+                &blacs_context, &lda, &info);
+
+    // optimize work distribution
+    int lwork = -1;
+    int liwork = -1;
+    double work_query;
+    int iwork_query;
+    pdsyevd_(&jobz,&uplo,&N,A,&one,&one,
+            descA,W,Z,&one,&one,
+            descZ,&work_query,&lwork,&iwork_query,&liwork,&info);
+    
+    if(info) myabort("diago: work distribution failed");
+
+    // Compute!
+    lwork = (int)work_query;
+    liwork = iwork_query;
+    double* work = (double*)malloc(lwork*sizeof(double));
+    int* iwork = (int*)malloc(liwork*sizeof(int));
+    pdsyevd_(&jobz,&uplo,&N,A,&one,&one,
+            descA,W,Z,&one,&one,
+            descZ,work,&lwork,iwork,&liwork,&info);
+
+    if(info) myabort("diago: diagonization failed");
+
+    // reduction of Z
+    double *Zbuf = (double*)malloc(sizeof(double) * N * N);
+    
+    if(rank){
+        // distribute
+        int Zinfo[4] = {local_nrow, local_ncol, myrow, mycol};
+        MPI_Send(Zinfo, 4, MPI_INT, 0, TAG_ZINFO, MPI_COMM_WORLD);
+        MPI_Send(Z, N * N, MPI_DOUBLE, 0, TAG_ZBUF, MPI_COMM_WORLD);
+    }
+
+    if(rank == 0){
+        // reduce
+        for(int id = 0;id < size;id++){
+            int Zinfo[4]; // {local_nrow, local_ncol, myrow, mycol};
+            if(id){
+                MPI_Status sta;
+                MPI_Recv(Zinfo, 4, MPI_INT, id, TAG_ZINFO, MPI_COMM_WORLD, &sta);
+                MPI_Recv(Zbuf, N * N, MPI_DOUBLE, id, TAG_ZBUF, MPI_COMM_WORLD, &sta);
+            }else{
+                Zinfo[0] = local_nrow; Zinfo[1] = local_ncol;
+                Zinfo[2] = myrow; Zinfo[3] = mycol;
+                memcpy(Zbuf, Z, sizeof(double) * local_ncol * local_nrow);
+            }
+            
+            // Write back to H
+            for (int i = 0; i < Zinfo[0]; i++){
+                for (int j = 0; j < Zinfo[1]; j++){
+                    int global_i = local_to_global(i, B, Zinfo[2], nprow);
+                    int global_j = local_to_global(j, B, Zinfo[3], npcol);
+                    H[global_i + global_j * N] = Zbuf[i + j * Zinfo[0]];
+                }
+            }
+        }
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // End
+    free(work); free(iwork);
+    free(A); free(Z); free(Zbuf);
+
+    Cblacs_gridexit(blacs_context);
+}
+
 void diagonize(int rank, int size, double *H, double *W, int N, 
     int mode){
 
-    if(rank == 0) std::cout << "[diago] start\n";
-    if(rank == 0) mytimer::start("diago");
+    if(rank == 0){
+        std::cout << "[diago] start\n";
+        mytimer::start("diago");
+    }
     
     if(mode == D_MODE_LAP){ // LAPACK
         if(rank == 0){
@@ -69,90 +204,11 @@ void diagonize(int rank, int size, double *H, double *W, int N,
     else if(mode != D_MODE_SCA) // UNKNOWN
         myabort("diago_lib: not supported.");
 
-    // SCALAPACK
-    int B = 2; // block size
-    int zero = 0, one = 1;
-    char jobz = 'V', uplo = 'U';
-    int info;
-    double *A, *Z;
-    int descA[9], descZ[9];
+    diagonize_scalapack(rank, size, H, W, N, mode); // SCALAPACK
 
-    // Initialize BLACS
-    int blacs_context = Csys2blacs_handle(MPI_COMM_WORLD);
-    int proc_rows = (int)sqrt(size);
-    int proc_cols = size / proc_rows;
-    while(proc_rows * proc_cols != size) {
-        proc_rows--;
-        proc_cols = size / proc_rows;
+    if(rank == 0){
+        output(H, W, N);
+        std::cout << "[diago] end\n";
+        mytimer::end("diago");
     }
-    Cblacs_gridinit(&blacs_context, "Row-major", proc_rows, proc_cols);
-
-    // Compute local array sizes
-    int myrow = 0, mycol = 0;
-    Cblacs_pcoord(blacs_context, rank, &myrow, &mycol);
-    int local_rows = numroc_(&N, &B, &myrow, &zero, &proc_rows);
-    int local_cols = numroc_(&N, &B, &mycol, &zero, &proc_cols);
-
-    // Allocate local arrays
-    A = (double*)malloc(local_rows * local_cols * sizeof(double));
-    Z = (double*)malloc(local_rows * local_cols * sizeof(double));
-
-    // Initialize matrix A
-    for(int i=0; i<N; i++) {
-        for(int j=0; j<N; j++) {
-            int global_row = i+1;
-            int global_col = j+1;
-            int local_row = indxg2p_(&global_row, &B, &myrow, &zero, &proc_rows);
-            int local_col = indxg2p_(&global_col, &B, &mycol, &zero, &proc_cols);
-            if(local_row == myrow && local_col == mycol) {
-                int local_index = (global_row-1)/proc_rows*B + (global_col-1)/proc_cols*B*local_rows + (global_row-1)%B + (global_col-1)%B*B;
-                A[local_index] = H[i * N + j];
-            }
-        }
-    }
-
-    // Initialize array descriptors
-    int lda = std::max(1, local_rows);
-    descinit_(descA, &N, &N, &B, &B, &zero, &zero,
-                &blacs_context, &lda, &info);
-    descinit_(descZ, &N, &N, &B, &B, &zero, &zero,
-                &blacs_context, &lda, &info);
-
-    // Compute eigenvalues and eigenvectors
-
-    int lwork = -1;
-    int liwork = -1;
-    double work_query;
-    int iwork_query;
-    pdsyevd_(&jobz,&uplo,&N,A,&one,&one,
-            descA,W,Z,&one,&one,
-            descZ,&work_query,&lwork,&iwork_query,&liwork,&info);
-
-    lwork = (int)work_query;
-    liwork = iwork_query;
-    double* work = (double*)malloc(lwork*sizeof(double));
-    int* iwork = (int*)malloc(liwork*sizeof(int));
-    pdsyevd_(&jobz,&uplo,&N,A,&one,&one,
-            descA,W,Z,&one,&one,
-            descZ,work,&lwork,iwork,&liwork,&info);
-
-    int rsrc = 0, csrc = 0;
-    int izero = 0;
-    int lld = std::max(1, local_rows);
-    pdgemr2d_(&N,&N,Z,&one,&one,descZ,
-            H,&one,&one,descA,
-            &blacs_context);
-
-    free(work); free(iwork);
-    free(A); free(Z);
-
-    Cblacs_gridexit(blacs_context);
-
-
-    if(info) myabort("diago: diagonization failed.");
-
-    if(!rank) output(H, W, N);
-    for(int i = 0;i < N;i++) printf("%d: w[%d]=%f\n",rank,i,W[i]);
-    if(rank == 0) std::cout << "[diago] end\n";
-    if(rank == 0) mytimer::end("diago");
 }

@@ -70,27 +70,6 @@ int main(int argc, char **argv){
         if(mode_str == "lapack") diag_mode = D_MODE_LAP;
         else if(mode_str == "scalapack") diag_mode = D_MODE_SCA;
     }
-
-    if(rank == 0) {
-        memset(H,0,sizeof(double)*16);
-        H[0]=1;
-// H[1]=2;
-// H[2]=3;
-// H[3]=4;
-// H[4]=2;
-H[5]=3;
-// H[6]=4;
-// H[7]=2;
-// H[8]=3;
-// H[9]=4;
-H[10]=2;
-// H[11]=1;
-// H[12]=4;
-// H[13]=2;
-// H[14]=1;
-H[15]=4;
-    }
-
     MPI_Bcast(&diag_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
