@@ -48,7 +48,7 @@ void output(double *H, double *W, int N){
         if(!ofs.is_open()) myabort("Failed to write eigenvectors.log");
         ofs << "Eigenvectors (row-wise):\n";
         for(int i = 0;i < N;i++) for(int j = 0;j < N;j++){
-            ofs << std::setw(6) << H[i * N + j] << " \n"[j == N - 1];
+            ofs << std::setw(12) << H[i * N + j] << " \n"[j == N - 1];
         }
     }
 }
