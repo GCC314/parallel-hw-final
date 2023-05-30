@@ -9,6 +9,6 @@ support_SH 0
 diago_lib scalapack
 support_Periodic_Boundary 0
 multi_parallel_strategies 0
-points_path ./POINTS2.txt
-v_path ./V.txt
-distribution_path ./Distribution.txt
+points_path data/POINTS.txt
+v_path data/V.txt
+distribution_path data/Distribution.txt

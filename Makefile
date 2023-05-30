@@ -10,12 +10,22 @@ LIBS = -L$(LAPACK_LIB_DIR) -L$(SCALAPACK_ROOT_DIR) -lscalapack -llapacke -llapac
 
 CFLAGS = -std=c++11 -O3 -fopenmp
 LFLAGS = -lm -lgfortran
+MPIFLAGS = 
+
 MPICXX = mpicxx
+MPIRUN = mpirun
+MPI_PROCESS_NUM = 2
+OPENMP_THREAD_NUM = 4
 
 EXEC_NAME = main
 EXEC_DIR = build/
 
-.PHONY: main clean lapack scalapack
+INPUT_FILE_DIR = data/INPUT.txt
+
+.PHONY: main clean lapack scalapack run
+
+run:
+	$(MPIRUN) -np $(MPI_PROCESS_NUM) $(MPIRUN_FLAGS) $(EXEC_DIR)/$(EXEC_NAME) $(INPUT_FILE_DIR) $(OPENMP_THREAD_NUM)
 
 main:
 	$(MPICXX) -D __MPI -o $(EXEC_DIR)/$(EXEC_NAME) $(CFLAGS) -I$(LAPACK_HEADER_DIR) src/*.cpp $(LIBS) $(LFLAGS)
@@ -29,4 +39,4 @@ scalapack:
 clean:
 	- $(MAKE) -C $(LAPACK_ROOT_DIR) clean
 	- $(MAKE) -C $(SCALAPACK_ROOT_DIR) clean
-	- rm $(EXEC_NAME)
+	- rm $(EXEC_DIR)/$(EXEC_NAME)

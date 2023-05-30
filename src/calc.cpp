@@ -31,6 +31,8 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
     
     int mod_yz = V.ny * V.nz; // to get id;
 
+    double dV = dx * dy * dz;
+
     for(int l = 0, r_ = fb_size;l < n_total;l += fb_size, r_ += fb_size){
         int r = min(n_total, r_);
         
@@ -57,7 +59,7 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
 
                 #pragma omp parallel for reduction(+:s)
                 for(int p = l;p < r;p++){
-                    s += fbuf[i][p - l] * V.d[p] * fbuf[j][p - l];
+                    s += fbuf[i][p - l] * V.d[p] * fbuf[j][p - l] * dV;
                 }
                 
                 H[i * N + j] += s;
