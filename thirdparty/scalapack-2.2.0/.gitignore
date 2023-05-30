@@ -14,5 +14,4 @@ PBLAS/TIMING/PB_Cwarn.c
 *.a
 BLACS/TESTING/xCbtest
 BLACS/TESTING/xFbtest
-SLmake.inc
 
