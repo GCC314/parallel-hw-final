@@ -38,13 +38,13 @@ char MAJOR_TYPE[] = "Row-major";
 
 void output(double *H, double *W, int N){
     {
-        std::ofstream ofs("eigenvalues.log");
+        std::ofstream ofs("output/eigenvalues.log");
         if(!ofs.is_open()) myabort("Failed to write eigenvalues.log");
         ofs << "Eigenvalues:\n";
         for(int i = 0;i < N;i++) ofs << W[i] << '\n';
     }
     {
-        std::ofstream ofs("eigenvectors.log");
+        std::ofstream ofs("output/eigenvalues.log");
         if(!ofs.is_open()) myabort("Failed to write eigenvectors.log");
         ofs << "Eigenvectors (row-wise):\n";
         for(int i = 0;i < N;i++) for(int j = 0;j < N;j++){

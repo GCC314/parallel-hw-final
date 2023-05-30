@@ -29,6 +29,7 @@ run:
 
 main:
 	- mkdir $(EXEC_DIR)
+	- mkdir output
 	$(MPICXX) -D __MPI -o $(EXEC_DIR)/$(EXEC_NAME) $(CFLAGS) -I$(LAPACK_HEADER_DIR) src/*.cpp $(LIBS) $(LFLAGS)
 
 lapack:
