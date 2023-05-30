@@ -31,6 +31,7 @@ main:
 	$(MPICXX) -D __MPI -o $(EXEC_DIR)/$(EXEC_NAME) $(CFLAGS) -I$(LAPACK_HEADER_DIR) src/*.cpp $(LIBS) $(LFLAGS)
 
 lapack:
+	- mkdir $(LAPACK_LIB_DIR)
 	$(MAKE) -C $(LAPACK_ROOT_DIR) lib
 
 scalapack:
