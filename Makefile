@@ -5,7 +5,7 @@ LAPACK_HEADER_DIR = $(LAPACK_ROOT_DIR)/LAPACKE/include
 SCALAPACK_ROOT_DIR = thirdparty/scalapack-2.2.0
 SCALAPACK_LIB = $(SCALAPACK_ROOT_DIR)/libscalapack.a
 
-LIBS = -L$(LAPACK_LIB_DIR) -L$(SCALAPACK_ROOT_DIR) -lscalapack -llapacke -llapack -lblas
+LIBS = -L$(SCALAPACK_ROOT_DIR) -lscalapack -L$(LAPACK_LIB_DIR) -llapacke -L$(LAPACK_LIB_DIR) -llapack -L$(LAPACK_LIB_DIR) -lrefblas
 # LIBS = -L$(LAPACK_LIB_DIR) -L$(SCALAPACK_ROOT_DIR) -lscalapack -llapacke -llapack -lblacs -lpblas -lblas
 
 CFLAGS = -std=c++11 -O3 -fopenmp
@@ -28,6 +28,7 @@ run:
 	$(MPIRUN) -np $(MPI_PROCESS_NUM) $(MPIRUN_FLAGS) $(EXEC_DIR)/$(EXEC_NAME) $(INPUT_FILE_DIR) $(OPENMP_THREAD_NUM)
 
 main:
+	- mkdir $(EXEC_DIR)
 	$(MPICXX) -D __MPI -o $(EXEC_DIR)/$(EXEC_NAME) $(CFLAGS) -I$(LAPACK_HEADER_DIR) src/*.cpp $(LIBS) $(LFLAGS)
 
 lapack:
