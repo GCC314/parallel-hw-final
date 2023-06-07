@@ -38,13 +38,13 @@ char MAJOR_TYPE[] = "Row-major";
 
 void output(double *H, double *W, int N){
     {
-        std::ofstream ofs("output/eigenvalues.log");
+        std::ofstream ofs("eigenvalues.log");
         if(!ofs.is_open()) myabort("Failed to write eigenvalues.log");
         ofs << "Eigenvalues:\n";
-        for(int i = 0;i < N;i++) ofs << W[i] << '\n';
+        for(int i = 0;i < N;i++) ofs << std::setprecision(15) << W[i] << '\n';
     }
     {
-        std::ofstream ofs("output/eigenvectors.log");
+        std::ofstream ofs("eigenvectors.log");
         if(!ofs.is_open()) myabort("Failed to write eigenvectors.log");
         ofs << "Eigenvectors (row-wise):\n";
         for(int i = 0;i < N;i++) for(int j = 0;j < N;j++){
@@ -87,8 +87,6 @@ void diagonize_scalapack(int rank, int size, double *H, double *W, int N,
 
     int local_nrow = numroc_(&N, &B, &myrow, &zero, &nprow);
     int local_ncol = numroc_(&N, &B, &mycol, &zero, &npcol);
-    // fprintf(stderr, "rank=%d, lnr=%d, lnc=%d, mr=%d, mc=%d\n", \
-    //     rank, local_nrow, local_ncol, myrow, mycol);
 
     // allocate the local matrix
     A = (double*)malloc(sizeof(double) * local_nrow * local_ncol);
@@ -103,11 +101,6 @@ void diagonize_scalapack(int rank, int size, double *H, double *W, int N,
             A[i + j * local_nrow] = H[global_i + global_j * N];
         }
     }
-
-    // for(int i = 0;i < local_nrow;i++) for(int j = 0;j < local_ncol;j++){
-    //     fprintf(stderr, "rank=%d,A[%d][%d]=%.1lf\n", \
-    //         rank, i, j, A[i + j * local_nrow]);
-    // }
 
     // initialize descs
     int lda = std::max(1, local_nrow);

@@ -119,20 +119,28 @@ void checkInput(const input_args &args){
 }
 
 
-const int FREAD_BUFFER_PSIZE = 128 * 1024 * 1024;
-const int FREAD_OFFSET = 30;
-const int FREAD_BUFFER_ALLSIZE = FREAD_BUFFER_PSIZE + FREAD_OFFSET;
-v_data parseV(const string &fname){ // manual IO for a fast performance
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
+const int FILE_BUFFER_SIZE = 128 * 1024 * 1024, OFFSET = 32;
+// manual IO for a fast performance
+v_data parseV(const string &fname){
     v_data ret;
-    char *fbuf = (char*)malloc(FREAD_BUFFER_ALLSIZE);
-    FILE *fp = fopen(fname.c_str(), "r");
-    if(!fp) myabort("Failed to open file: " + fname);
-    
+    char *buffer = (char*) malloc(OFFSET + FILE_BUFFER_SIZE);
+    int _; // anonymous temp var
+
+    // open file
+    int fd = open(fname.c_str(), O_RDONLY, 0);
+    if(!~fd) myabort("Failed to open file: " + fname);
+
     // read nx, ny, nz;
     input_args args;
     auto parseAttr = [&](){
         string line = "";
-        for(char c = fgetc(fp);c != '\n';c = fgetc(fp)) line += c;
+        char c;
+        for(_ = read(fd, &c, 1);c != '\n';_ = read(fd, &c, 1)) line += c;
         string argname, argval;
         std::istringstream ss(line);    // using sstream for param parsing
         ss >> argname >> argval;
@@ -145,26 +153,32 @@ v_data parseV(const string &fname){ // manual IO for a fast performance
     ret.d = (double*)malloc(sizeof(double) * ret.nx * ret.ny * ret.nz);
 
     // skip header
-    for(char c = fgetc(fp);c != '\n';c = fgetc(fp));
+    {
+        char c;
+        for(_ = read(fd, &c, 1);c != '\n';_ = read(fd, &c, 1));
+    }
+
 
     // now read V !!
     int addr = 0;
     char *p_now = 0, *p_end = 0;
     bool reachend = false;
     auto loadbuf = [&](){
-        p_now = fbuf + FREAD_OFFSET;
-        int size = fread(p_now, FREAD_BUFFER_PSIZE, 1, fp);
-        reachend |= (size != FREAD_BUFFER_PSIZE);
-        p_end = fbuf + size;
+        p_now = buffer + OFFSET;
+        ssize_t size = read(fd, buffer + OFFSET, FILE_BUFFER_SIZE);
+        reachend |= (size != FILE_BUFFER_SIZE);
+        p_end = buffer + OFFSET + size;
     };
     loadbuf();
     for(int i = 0;i < ret.nx;i++){
         for(int j = 0;j < ret.ny;j++){
             for(int k = 0;k < ret.nz;k++, addr++){
-                if(!reachend && p_now + FREAD_OFFSET >= p_end){
+                if(!reachend && p_now + OFFSET >= p_end){
                     // copy and load
-                    memcpy(fbuf, p_end - 30, 30);
+                    int now_offset = p_now + OFFSET - p_end;
+                    memcpy(buffer, p_end - OFFSET, OFFSET);
                     loadbuf();
+                    p_now = buffer + now_offset;
                 }
                 char *p_nxt = p_now;
                 ret.d[addr] = std::strtod(p_now, &p_nxt);
@@ -173,6 +187,7 @@ v_data parseV(const string &fname){ // manual IO for a fast performance
         }
     }
 
-    free(fbuf);
+    free(buffer);
+    close(fd); // close file
     return ret;
 }
