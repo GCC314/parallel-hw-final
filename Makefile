@@ -20,7 +20,7 @@ OPENMP_THREAD_NUM = 4
 EXEC_NAME = main
 EXEC_DIR = build/
 
-INPUT_FILE_DIR = data/INPUT.txt
+INPUT_FILE_DIR = data/correctness/INPUT.txt
 
 .PHONY: main clean lapack scalapack run
 

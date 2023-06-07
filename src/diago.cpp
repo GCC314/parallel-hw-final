@@ -44,7 +44,7 @@ void output(double *H, double *W, int N){
         for(int i = 0;i < N;i++) ofs << W[i] << '\n';
     }
     {
-        std::ofstream ofs("output/eigenvalues.log");
+        std::ofstream ofs("output/eigenvectors.log");
         if(!ofs.is_open()) myabort("Failed to write eigenvectors.log");
         ofs << "Eigenvectors (row-wise):\n";
         for(int i = 0;i < N;i++) for(int j = 0;j < N;j++){

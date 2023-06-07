@@ -59,9 +59,9 @@ int main(int argc, char **argv){
 
         H = (double*)malloc(sizeof(double) * N * N);
         
-        double dx = std::stod(getarg(inp, "lx")) / (V.nx - 1);
-        double dy = std::stod(getarg(inp, "ly")) / (V.ny - 1);
-        double dz = std::stod(getarg(inp, "lz")) / (V.nz - 1);
+        double dx = std::stod(getarg(inp, "lx")) / V.nx;
+        double dy = std::stod(getarg(inp, "ly")) / V.ny;
+        double dz = std::stod(getarg(inp, "lz")) / V.nz;
         calculator(H, N, itp, V, points, dx, dy, dz);
 
         V.unload(); itp.unload(); dist.unload();
@@ -78,6 +78,10 @@ int main(int argc, char **argv){
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Bcast(H, N * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
+
+    if(rank==0){
+        for(int i = 0;i < N;i++) for(int j = 0;j < N;j++) std::cout << H[i * N + j] << "\n";
+    }
 
     diagonize(rank, size, H, W, N, diag_mode);
     // using MPI parallelism
