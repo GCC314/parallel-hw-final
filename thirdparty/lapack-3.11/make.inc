@@ -18,7 +18,7 @@ CFLAGS = -O3
 #  should not compile LAPACK with flags such as -ffpe-trap=overflow.
 #
 FC = mpif90
-FFLAGS = -O2 -frecursive
+FFLAGS = -O2 -frecursive -fallow-argument-mismatch 
 FFLAGS_DRV = $(FFLAGS)
 FFLAGS_NOOPT = -O0 -frecursive
 

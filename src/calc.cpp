@@ -11,7 +11,7 @@
 using std::max;
 using std::min;
 
-const int MAX_TOTAL_BUFSIZE = 50000000;
+const int MAX_TOTAL_BUFSIZE = 200000000;
 inline double S2(const double& x){return x * x;}
 
 void calculator(double* H, int N, Interpolator& itp, v_data &V,

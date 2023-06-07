@@ -14,15 +14,15 @@ MPIFLAGS =
 
 MPICXX = mpicxx
 MPIRUN = mpirun
-MPI_PROCESS_NUM = 2
-OPENMP_THREAD_NUM = 4
+MPI_PROCESS_NUM = 4
+OPENMP_THREAD_NUM = 32
 
 EXEC_NAME = main
 EXEC_DIR = build/
 
-INPUT_FILE_DIR = data/correctness/INPUT.txt
+INPUT_FILE_DIR = data/INPUT.txt
 
-.PHONY: main clean lapack scalapack run
+.PHONY: main clean lapack scalapack run pre
 
 run:
 	$(MPIRUN) -np $(MPI_PROCESS_NUM) $(MPIRUN_FLAGS) $(EXEC_DIR)/$(EXEC_NAME) $(INPUT_FILE_DIR) $(OPENMP_THREAD_NUM)
@@ -43,3 +43,6 @@ clean:
 	- $(MAKE) -C $(LAPACK_ROOT_DIR) clean
 	- $(MAKE) -C $(SCALAPACK_ROOT_DIR) clean
 	- rm $(EXEC_DIR)/$(EXEC_NAME)
+
+pre:
+	~/init.sh
