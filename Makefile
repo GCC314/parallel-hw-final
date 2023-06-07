@@ -22,10 +22,13 @@ EXEC_DIR = build/
 
 INPUT_FILE_DIR = data/INPUT.txt
 
-.PHONY: main clean lapack scalapack run pre
+.PHONY: main clean lapack scalapack run pre run_with_memcheck
 
 run:
-	$(MPIRUN) -np $(MPI_PROCESS_NUM) $(MPIRUN_FLAGS) $(EXEC_DIR)/$(EXEC_NAME) $(INPUT_FILE_DIR) $(OPENMP_THREAD_NUM)
+	$(MPIRUN) --allow-run-as-root -np $(MPI_PROCESS_NUM) $(MPIRUN_FLAGS) $(EXEC_DIR)/$(EXEC_NAME) $(INPUT_FILE_DIR) $(OPENMP_THREAD_NUM)
+
+run_with_memcheck:
+	time -v $(MPIRUN) --allow-run-as-root -np $(MPI_PROCESS_NUM) $(MPIRUN_FLAGS) $(EXEC_DIR)/$(EXEC_NAME) $(INPUT_FILE_DIR) $(OPENMP_THREAD_NUM)
 
 main:
 	- mkdir $(EXEC_DIR)

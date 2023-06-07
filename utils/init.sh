@@ -11,3 +11,4 @@ echo "deb https://mirrors.ustc.edu.cn/ubuntu/ jammy-proposed main restricted uni
 echo "deb-src https://mirrors.ustc.edu.cn/ubuntu/ jammy-proposed main restricted universe multiverse" >> /etc/apt/sources.list
 apt update
 apt install openmpi-bin openmpi-doc libopenmpi-dev -y
+apt install time
