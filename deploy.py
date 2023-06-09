@@ -27,9 +27,9 @@ def runperf(args):
         f"diago_lib scalapack\n",
         f"support_Periodic_Boundary 0\n",
         f"multi_parallel_strategies 0\n",
-        f"points_path {test_dir}/points{points}.txt\n",
-        f"v_path {test_dir}/V{v}.txt\n",
-        f"distribution_path {test_dir}/distribution80.txt"
+        f"points_path {test_dir}/Point/point{points}.txt\n",
+        f"v_path {test_dir}/V/V{v}.txt\n",
+        f"distribution_path {test_dir}/Distribution/distribution80.txt"
     ])
     with open("INPUT.txt", "w") as fp: print(input_file, file=fp)
     subprocess.run(f"make run_with_memcheck OPENMP_THREAD_NUM={thread_cnt} INPUT_FILE_DIR=INPUT.txt &> output/{v}-{points}-{thread_cnt}.log",shell=True)
