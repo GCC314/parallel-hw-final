@@ -57,6 +57,13 @@ void calculator(double* H, int N, Interpolator& itp, v_data &V,
 
         for(int i = 0;i < N;i++){
             for(int j = i;j < N;j++){
+                double sum = -4.0 * S2(itp.dist->cutoff);
+                sum += S2(points[i].x - points[j].x);
+                sum += S2(points[i].y - points[j].y);
+                sum += S2(points[i].z - points[j].z);
+                if(sum < 1e-7) continue;
+                // ignore if |p_i - p_j| > 2cutoff
+
                 double s = 0.0;
 
                 #pragma omp parallel for reduction(+:s)

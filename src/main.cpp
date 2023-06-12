@@ -79,6 +79,9 @@ int main(int argc, char **argv){
     MPI_Bcast(H, N * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
     
+    if(N <= 2 && !rank) for(int i = 0;i < N;i++) for(int j = 0;j < N;j++)
+        std::cout << H[i * N + j] << "\n"; // for debug
+
     diagonize(rank, size, H, W, N, diag_mode);
     // using MPI parallelism
 
